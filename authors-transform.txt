@@ -1,0 +1,5 @@
+miky.dinescu = Mike Dinescu <mdinescu@donaq.com>
+mdinescu = Mike Dinescu <mdinescu@donaq.com>
+mike.dinescu = Mike Dinescu <mdinescu@donaq.com>
+root = Mike Dinescu <mdinescu@donaq.com>
+"Miky Dinescu" = Mike Dinescu <mdinescu@donaq.com>
