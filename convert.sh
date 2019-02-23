@@ -70,10 +70,7 @@ read -p "Press any key to continue... " -n1 -s
 git svn clone $SVN_HOST/$REPONAME/ --username "$SVNUSER" --no-metadata -A authors-transform.txt --stdlayout ./temp --branches=$BRANCHES
 
 cd "$WORKPATH/temp"
-git checkout origin/trunk
 git svn show-ignore --id=origin/trunk > .gitignore
-#git add .gitignore
-#git commit -m 'Converted snv:ignore to .gitignore'
 
 echo 'Cloned the SVN repo to temp and extracted the gitignore'
 read -p "Press any key to continue... " -n1 -s
@@ -107,11 +104,21 @@ git remote add tgt "$GIT_REMOTE_PATH$GITREPO.git"
 # push all branchs from the bare to the remote beanstalk repo
 git for-each-ref --format='%(refname)' refs/heads | cut -d / -f 3 | while read ref; do git push tgt $ref; done
 
-read -p "Conversion complete. Ready to add .gitignore. Press any key to continue... " -n1 -s
+read -p "Conversion complete. Adding .gitignore. Press any key to continue... " -n1 -s
 
-mv "$WORKPATH/temp/.gitignore" "$WORKPATH/$REPONAME.git/"
-cd "$WORKPATH/$REPONAME.git"
+cd "$WORKPATH"
+git clone "$WORKPATH/$REPONAME.git" wip
+mv "$WORKPATH/temp/.gitignore" "$WORKPATH/wip/"
+cd "$WORKPATH/wip"
 git checkout master
 git add .gitignore
-git commit -m "Added .gitignore"
+git commit -m "Added project .gitignore"
 git push
+git remote add tgt -t master "$GIT_REMOTE_PATH$GITREPO.git"
+git fetch tgt
+git push tgt master
+
+cd "$WORKPATH"
+read -p "Final cleanup... Ctrl-C to cancel; Enter to continue" -n1 -s
+rm -rf "$WORKPATH/wip"
+rm -rf "$WORKPATH/temp"
