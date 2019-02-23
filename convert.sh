@@ -19,6 +19,8 @@ if [ -z ${1+x} ]; then
   exit -1
 fi
 
+command -v git >/dev/null 2>&1 || { echo >&2 "Git is required but it's not installed.  Aborting."; exit 1; }
+
 REPONAME=$1
 BRANCHES=${2:-"branches"}
 GITREPO="$REPONAME"
@@ -65,15 +67,20 @@ echo "Work path: $WORKPATH"
 
 
 echo "Ready to convert: $REPONAME"
+echo ''
 read -p "Press any key to continue... " -n1 -s
-
+echo ''
+echo '---'
 git svn clone $SVN_HOST/$REPONAME/ --username "$SVNUSER" --no-metadata -A authors-transform.txt --stdlayout ./temp --branches=$BRANCHES
 
+echo ''
+echo '---'
 cd "$WORKPATH/temp"
 git svn show-ignore --id=origin/trunk > .gitignore
 
 echo 'Cloned the SVN repo to temp and extracted the gitignore'
 read -p "Press any key to continue... " -n1 -s
+echo ''
 
 # make a new git bare repo
 cd "$WORKPATH"
@@ -81,8 +88,10 @@ git init --bare "./$REPONAME.git"
 cd "$WORKPATH/$REPONAME.git"
 git symbolic-ref HEAD refs/heads/trunk
 
+echo ''
 echo 'Created a new bare git repo; ready to push to it'
 read -p "Press any key to continue... " -n1 -s
+echo ''
 
 # push from the git-svn proxy repo to the true bare git repo
 cd "$WORKPATH/temp"
@@ -95,16 +104,28 @@ cd "$WORKPATH/$REPONAME.git"
 git branch -m origin/trunk master
 git symbolic-ref HEAD refs/heads/master
 
+echo ''
+echo '---'
+echo 'Converting tags and branches'
+echo ''
 # convert all tags, and branchs
 git for-each-ref --format='%(refname)' refs/heads/origin/tags | cut -d / -f 5 | while read ref; do   git tag "$ref" "refs/heads/origin/tags/$ref";   git branch -D "origin/tags/$ref"; done
 git for-each-ref --format='%(refname)' refs/heads/origin | cut -d / -f 4 | while read ref; do git branch -m "origin/$ref" "$ref"; done
 
+echo ''
+echo '---'
+echo 'Pushing to the remote Git repository..'
+echo ''
 # add a remote repo
 git remote add tgt "$GIT_REMOTE_PATH$GITREPO.git"
 # push all branchs from the bare to the remote beanstalk repo
 git for-each-ref --format='%(refname)' refs/heads | cut -d / -f 3 | while read ref; do git push tgt $ref; done
 
-read -p "Conversion complete. Adding .gitignore. Press any key to continue... " -n1 -s
+echo '---'
+echo 'Conversion complete'
+echo '---'
+read -p "Adding .gitignore. Press any key to continue... " -n1 -s
+echo ''
 
 cd "$WORKPATH"
 git clone "$WORKPATH/$REPONAME.git" wip
@@ -119,6 +140,11 @@ git fetch tgt
 git push tgt master
 
 cd "$WORKPATH"
+echo ''
 read -p "Final cleanup... Ctrl-C to cancel; Enter to continue" -n1 -s
 rm -rf "$WORKPATH/wip"
 rm -rf "$WORKPATH/temp"
+echo ''
+echo ''
+echo "All done. Don't forget to remove '$WORKPATH/$REPONAME.git' if you're done with it"
+echo ''
